@@ -1,0 +1,18 @@
+This repository contains the MATLAB .m scripts of the models and analyses reported in the published work
+Mannan AA and Bates DG (2020) "Designing an irreversible metabolic switch for scalable induction of microbial chemical production", Nature Communications.
+
+All scripts that perform analyses and reproduce the plots of the paper are named "A[#1]_... .m" and can simply be run in MATLAB. Note all scripts were developed in MATLAB 2018a and use functions from the ODE suite, Optimization suite, Global Optimization suite and others.
+
+Here we briefly describe what each analysis script does, but do not describe the subscripts developed to make them run, what we call the method scripts (named "m_ ... .m"):
+
+Folder: 
+- A1_ .m = 
+- A2_ .m = 
+
+Folder: 
+- A1_ .m = 
+- A2_ .m = 
+
+Folder: 
+- A1_ .m = 
+- A2_ .m = 
