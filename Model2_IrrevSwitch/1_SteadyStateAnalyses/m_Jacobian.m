@@ -1,0 +1,193 @@
+% ------------------------------------------------------------------------
+%              ANALYTICAL FORM OF JACOBIAN MATRIX FOR MODEL 2
+%                       Model of irreversible switch
+% ------------------------------------------------------------------------
+% We write down the analytical forms of the elements of the Jacobian
+% matrix, evaluate at steady state, solve for eigenvalues and use that to
+% determine the steady state stability.
+% ------------------------------------------------------------------------
+% Ahmad A. Mannan
+% 17/11/2020
+% ------------------------------------------------------------------------
+
+function J = m_Jacobian(params,comp,varSS,OA)
+
+
+% --- Model parameters ---------------------------------------------------
+
+p     = params;
+b_R   = p(1);  % Basal leaky expression of FadR.
+a_R   = p(2);  % Maximum rate of expression of FadR.
+K_R   = p(3);  % Ratio of rate of binding to unbinding of FadR to its promoter.
+b_D   = p(4);  % Basal leaky expression of FadD.
+a_D   = p(5);  % Maximum rate of expression of FadD.
+K_D   = p(6);  % Ratio of rate of binding to unbinding of FadR to FadD promoter.
+kcatD = p(7); % Turnover rate of enzyme of FadD.
+Km_D  = p(8); % Michaelis-constant of enzyme of FadD for Fatty Acid (OA).
+kcatB = p(9); % Turnover rate of enzyme of PlsB.
+Km_B  = p(10); % Michaelis-constant of enzyme of PlsB for Acyl-CoA.
+B     = p(11); % Assumed constant levels of PlsB enzyme.
+kf    = p(12); % Effective forward rate of FadR sequestration by Acyl-CoA.
+kr    = p(13); % Effective reverse rate of sequestering.
+a_g   = p(14); % Maximum synthesis rate of Eg (enzyme for growth).
+K_g   = p(15); % Affinity of FadR to activating expression of Eg.
+muMax = p(16); % Maximum achievable growth rate (as set).
+sT    = p(17); % Severity of growth-production enzyme concentration trade-off, ranging from 0 (no trade-off) to 1 (most severe trade-off).
+b_T   = p(18); % TetR expression leakiness
+a_T   = p(19); % TetR promoter strength
+K_Ri  = p(20); % Affinity of FadR to inhibit TetR expression
+K_T   = p(21); % Affinity of TetR to inhibit FadR expression
+
+
+% --- Steady state values of variables -----------------------------------
+R  = varSS(1);
+D  = varSS(2);
+A  = varSS(3);
+C  = varSS(4);
+Eg = varSS(5);
+T  = varSS(6);
+
+
+% --- Expression of Jacobian elements ------------------------------------
+
+% f1 = dR/dt, f2 = dD/dt, f3 = dA/dt, f4 = dC/dt, f5 = dEg/dt, f6 = dT/dt
+
+% Initialize 6x6 Jacobian:
+J = zeros(6);
+
+% Define growth rate:
+mu = muMax * (Eg*sT - sT + 1);
+
+
+% ----- f1 -----
+% df1/dR:
+if strcmp(comp,'COMP') == 1
+    dPdR = a_R*K_R*(1 + (K_T*T).^2)./((1 + K_R*R + (K_T*T).^2).^2);
+elseif strcmp(comp,'NONCOMP') == 1
+    dPdR = a_R*K_R./(((1 + K_R*R).^2).*(1 + (K_T*T).^2));
+elseif strcmp(comp,'NOPAR') == 1
+    dPdR = 0;
+end
+J(1,1) = dPdR - (kf*(A^2)) - mu;
+
+% df1/dD:
+J(1,2) = 0;
+
+% df1/dA:
+J(1,3) = - 2 * kf .* A .* R;
+
+% df1/dC:
+J(1,4) = kr;
+
+% df1/dEg:
+J(1,5) = - muMax * R * sT;
+
+% df1/dT:
+if strcmp(comp,'COMP') == 1
+    dPdT = - 2*a_R*K_R*R*(K_T^2).*T./((1 + K_R*R + (K_T*T).^2).^2);
+elseif strcmp(comp,'NONCOMP') == 1
+    dPdT = - 2*a_R*K_R*R*(K_T^2).*T./((1 + K_R*R).*((1 + (K_T*T).^2).^2));
+elseif strcmp(comp,'NOPAR') == 1
+    dPdT = - a_R * (K_T^2) * 2 * T ./((1 + (K_T*T).^2).^2);
+end
+J(1,6) = dPdT;
+
+
+% ----- f2 -----
+% df2/dR:
+J(2,1) = - 2 * a_D * (K_D^2) * R / ((1 + (K_D*R)^2)^2);
+
+% df2/dD:
+J(2,2) = - mu;
+
+% df2/dA:
+J(2,3) = 0;
+
+% df2/dC:
+J(2,4) = 0;
+
+% df2/dEg:
+J(2,5) = - muMax * D * sT;
+
+% df2/dT:
+J(2,6) = 0;
+
+
+% ----- f3 -----
+% df3/dR:
+J(3,1) = - 2 * kf * (A^2);
+
+% df3/dD:
+J(3,2) = kcatD * OA / (Km_D + OA);
+
+% df3/dA:
+J(3,3) =  - (kcatB*B*Km_B./((Km_B + A).^2)) - (4*kf*A*R) - mu;
+
+% df3/dC:
+J(3,4) = 2 * kr;
+
+% df3/dEg:
+J(3,5) = - muMax * A * sT;
+
+% df3/dT:
+J(3,6) = 0;
+
+
+% ----- f4 -----
+% df4/dR:
+J(4,1) = kf * (A^2);
+
+% df4/dD:
+J(4,2) = 0;
+
+% df4/dA:
+J(4,3) = 2 * kf * A * R;
+
+% df4/dC:
+J(4,4) = - kr - mu;
+
+% df4/dEg:
+J(4,5) = - muMax * C * sT;
+
+% df4/dT:
+J(4,6) = 0;
+
+
+% ----- f5 -----
+% df5/dR:
+J(5,1) = a_g * K_g ./ ((1 + K_g*R).^2);
+
+% df5/dD:
+J(5,2) = 0;
+
+% df5/dA:
+J(5,3) = 0;
+
+% df5/dC:
+J(5,4) = 0;
+
+% df5/dEg:
+J(5,5) = - (2*muMax*Eg*sT) + (muMax*(sT - 1));
+
+% df5/dT:
+J(5,6) = 0;
+
+
+% ----- f6 -----
+% df6/dR:
+J(6,1) = - 2*a_T*(K_Ri^2)*R./((1 + (K_Ri*R).^2).^2);
+
+% df6/dD:
+J(6,2) = 0;
+
+% df6/dA:
+J(6,3) = 0;
+
+% df6/dC:
+J(6,4) = 0;
+
+% df6/dEg:
+J(6,5) = - muMax * sT * T;
+
+% df6/dT:
+J(6,6) = - mu;
